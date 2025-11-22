@@ -16,9 +16,10 @@ the Search Term in the Name or description on the public dockerhub.
 Tested on debian bookworm
 
 ```bash
-git clone https://github.com/telekom-security/klepto.git 
 
 sudo apt install git curl docker-compose
+
+git clone https://github.com/telekom-security/klepto.git 
 ```
 
 ## Usage
