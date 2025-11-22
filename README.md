@@ -17,7 +17,7 @@ Tested on debian bookworm
 
 ```bash
 
-sudo apt install git curl docker-compose
+sudo apt install git curl jq docker docker-registry
 
 git clone https://github.com/telekom-security/klepto.git 
 ```
