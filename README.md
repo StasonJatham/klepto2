@@ -14,10 +14,12 @@ the Search Term in the Name or description on the public dockerhub.
 ## Installation
 
 Tested on debian bookworm
+Tested on WSL ubuntu:
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 4.4.0-19041-Microsoft x86_64)
 
 ```bash
 
-sudo apt install git curl jq docker docker-registry
+sudo apt install git curl jq docker.io python3 docker-registry docker-compose
 
 git clone https://github.com/telekom-security/klepto.git 
 ```
