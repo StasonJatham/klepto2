@@ -26,5 +26,7 @@ done
 rm findings.txt 2>/dev/null
 rm trufflehog_*.json 2>/dev/null
 rm gitleaks_*.json 2>/dev/null
+rm filtered_data.json 2>/dev/null
+rm trufflehog.json 2>/dev/null
 rm -rf $CURRENTDIR/archives-imag* 2>/dev/null
 ./search_scan.sh

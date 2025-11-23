@@ -20,7 +20,8 @@ while IFS= read -r line; do
 	REPO_NAME_STR=`echo $REPO_NAME | awk -F\/ '{ print $1"_"$2}'`
 	echo $REPO_NAME_STR
 	docker run -v  $CURRENTDIR"/archives-image/":/path trufflesecurity/trufflehog:latest filesystem /path -j > "trufflehog_"$REPO_NAME_STR".json"
-	docker run -v $CURRENTDIR"/archives-image/":/path ghcr.io/gitleaks/gitleaks:latest detect --no-git -v -s "/path" -f json -r "gitleaks"$REPO_NAME_STR".json"
+	docker run -v $CURRENTDIR"/archives-image/":/path ghcr.io/gitleaks/gitleaks:latest detect --no-git -v -s "/path" -f json -r "/path/gitleaks"$REPO_NAME_STR".json"
+	cp $CURRENTDIR"/archives-image/gitleaks"$REPO_NAME_STR".json" $CURRENTDIR/"gitleaks"$REPO_NAME_STR".json"
 	rm -rf $CURRENTDIR"/archives-image/"
 	rm -rf $CURRENTDIR"/archives-image-tar/"
 done < "$INPUT_FILE"
