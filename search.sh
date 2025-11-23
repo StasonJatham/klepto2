@@ -3,7 +3,7 @@
 # Init
 SEARCH_TERM=$1
 OUTPUT_FILE="search.txt"
-
+CURRENTDIR=$(pwd)
 # Perform the Docker search and extract the image names
 image_names=$(docker search "$SEARCH_TERM" --format "{{.Name}}")
 
@@ -23,4 +23,8 @@ echo "$image_names" > "$OUTPUT_FILE"
 
 
 done
+rm findings.txt 2>/dev/null
+rm trufflehog_*.json 2>/dev/null
+rm gitleaks_*.json 2>/dev/null
+rm -rf $CURRENTDIR/archives-imag* 2>/dev/null
 ./search_scan.sh
