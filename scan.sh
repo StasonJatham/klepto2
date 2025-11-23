@@ -1,22 +1,11 @@
 #!/bin/sh
-CURRENTDATE="20240904"
+CURRENTDATE=$(date)
 ARCHIVEDIR=$(pwd)"/archives-image/"
 ARCHIVEDIRTAR=$(pwd)"/archives-image-tar/"
 FINDINGSFILE=$(pwd)"/findings.txt"
 
 echo "NOTE: Be aware to search as root for more results due to file system restrictions (e.g. chmod -R 777 $ARCHIVEDIR*)." 
 echo "----------------------------------------------------------------------NEXT $ARCHIVEDIR"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT $ARCHIVEDIR"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT $ARCHIVEDIR"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
-echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
 echo "----------------------------------------------------------------------NEXT REPO $REPO_NAME"  >> $FINDINGSFILE
 echo "---------------------------------------------------------------------- SHADOW"  >> $FINDINGSFILE
 for file in $(find $ARCHIVEDIR -iname shadow); do if grep -q '\$' $file; then echo $(realpath $file); grep '\$' $file; fi; done >> $FINDINGSFILE
@@ -90,19 +79,14 @@ echo "---------------------------------------------------------------------- KUB
 for directory in $(find $ARCHIVEDIR -iname .kube -type d); do echo $directory; ls -lah $directory; cat $directory/config*; done >> $FINDINGSFILE
 echo "---------------------------------------------------------------------- docker-compose.yml" >> $FINDINGSFILE
 for file in $(find $ARCHIVEDIR -iname docker-compose.yml -type f); do echo $file; echo $file; cat $file|grep -iE "(password|user|key.*=.*|login|account|url.*:.*@.*)"; done >> $FINDINGSFILE
-echo "---------------------------------------------------------------------- ip adressess" >> $FINDINGSFILE
-echo "---------------------------------------------------------------------- ip adressess" >> $FINDINGSFILE
-echo "---------------------------------------------------------------------- ip adressess" >> $FINDINGSFILE
-echo "---------------------------------------------------------------------- ip adressess" >> $FINDINGSFILE
-echo "---------------------------------------------------------------------- ip adressess" >> $FINDINGSFILE
+#echo "---------------------------------------------------------------------- passwords/github" >> $FINDINGSFILE
 
-grep -lirs 'password' /archives-image/ >> $FINDINGSFILE
-grep -lirs 'password' /archives-image/  >> $FINDINGSFILE
-grep -lirs '.devops.telekom.de' /archives-image/ >> $FINDINGSFILE
+#grep -lirs 'password' $ARCHIVEDIR >> $FINDINGSFILE
+#grep -lirs 'passwort' $ARCHIVEDIR  >> $FINDINGSFILE
+#grep -lirs 'github.com' $ARCHIVEDIR >> $FINDINGSFILE
 
 
-echo "---------------------------------------------------------------------- password done" >> $FINDINGSFILE
-
+echo "---------------------------------------------------------------------- DONE" >> $FINDINGSFILE
 
 
 # Artifactory tokens begin with AKC

@@ -4,13 +4,13 @@ import os
 # Umgebungsvariablen einlesen
 #desired_detector_type = json.loads(os.getenv('DETECTOR_TYPES', '[]')) #gesuchten Detector Types
 #undesired_terms = json.loads(os.getenv('UNDESIRED_TERMS')) #Liste von unerwünschten Begriffen für das "Raw"-Feld
-input_file = os.getenv('INPUT_FILE', 'trufflehog.json') #Zu parsende JSON-Datei
-output_file = os.getenv('OUTPUT_FILE', 'filtered_data.json') #Ergebnis File
+#input_file = os.getenv('INPUT_FILE', 'trufflehog.json') #Zu parsende JSON-Datei
+#output_file = os.getenv('OUTPUT_FILE', 'filtered_data.json') #Ergebnis File
 
 desired_detector_type = [2, 3, 7, 9, 15, 17, 18, 31, 39, 40, 48, 69, 71, 120, 177, 350, 353, 582, 584, 599, 737, 924]
 undesired_terms = ["example", "test", "dummy", "sample"]
-# input_file = 'trufflehog.json'
-# output_file = 'filtered_data.json'
+input_file = 'trufflehog.json'
+output_file = 'filtered_data.json'
 
 def contains_undesired_term(raw_value, terms):
     """Überprüft, ob der Raw-Wert unerwünschte Begriffe enthält."""
