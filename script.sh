@@ -27,8 +27,8 @@ download() {
        	#docker save $DOCKERURL/$1 -o $ARCHIVEDIR/$(echo "$1" | sed 's/\//--/g' | sed 's/:/--/g').tar
 	docker save $1 -o $ARCHIVEDIR$IMAGETAR
 	docker rmi $1
-	unpack
-	#rm $ARCHIVEDIR/*.tar
+#	unpack
+#	rm $ARCHIVEDIR/*.tar
 }
 
 unpack() {
@@ -60,7 +60,7 @@ unpack() {
 
             # Unpack 'layer.tar'
             tar -xf layer.tar
-
+			rm -rf layer.tar
             # Return to the previous directory
             cd - || exit
         done
@@ -70,10 +70,6 @@ unpack() {
 
         # Move the original tar file to the ARCHIVETARDIR
         mv "$tarfile" "$ARCHIVETARDIR/$(basename "$tarfile")"
-		cd $CURRENTDIR 
-		./scan.sh
-		cat findings.txt
-
     done
 }
 
@@ -206,6 +202,6 @@ else
 		done
 	done
 fi
-unpack()
+
 
 echo "Finished!"
