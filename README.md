@@ -39,6 +39,28 @@ Change desired_detector_type = [2, 3, 7, 9, 15, 17, 18, 31, 39, 40, 48, 69, 71, 
 undesired_terms = ["example", "test", "dummy", "sample"]
 ```
 
+## Run with Docker
+
+```bash
+# Build the image
+docker build -t klepto .
+
+# Run the search workflow (mount the Docker socket so the scripts can pull/save images)
+docker run --rm -it \
+  -e APIKEY=<your_dockerhub_pat> \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$(pwd)":/app \
+  klepto <search-term>
+
+# Run a different script (example: pull a specific repository)
+docker run --rm -it \
+  -e APIKEY=<your_dockerhub_pat> \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$(pwd)":/app \
+  --entrypoint ./script.sh \
+  klepto -r namespace/name -u https://hub.docker.com/
+```
+
 ## Roadmap
 If you have ideas for releases in the future, it is a good idea to list them in the README.
 

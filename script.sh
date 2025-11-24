@@ -2,7 +2,7 @@
 
 # Init
 # Change APIKEY to your Dockerhub personal Token
-APIKEY="dckr_pat_aSYdYzdJrezHx9-5UhKvd7yXqw8"
+APIKEY="${APIKEY:-dckr_pat_aSYdYzdJrezHx9-5UhKvd7yXqw8}"
 CURRENTDATE=$(date '+%Y%m%d')
 CURRENTDIR=$(pwd)
 IMAGETAR=image.tar

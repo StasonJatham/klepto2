@@ -1,0 +1,13 @@
+.git
+.gitignore
+archives-image*
+archives-image-tar*
+findings.txt
+filtered_data.json
+trufflehog*.json
+gitleaks*.json
+search.txt
+*.tar
+*.jpg
+*.webp
+__pycache__
