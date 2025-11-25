@@ -17,4 +17,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Create a non-root user
+RUN useradd -m klepto && \
+    chown -R klepto:klepto /app
+
+USER klepto
+
 ENTRYPOINT ["python", "klepto2.py"]

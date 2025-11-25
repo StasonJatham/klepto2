@@ -13,6 +13,8 @@ from colorama import init, Fore, Style
 # Initialize colorama
 init(autoreset=True)
 
+__version__ = "2.0.0"
+
 class ColoredFormatter(logging.Formatter):
     """Custom formatter for colored logs."""
     
@@ -474,6 +476,7 @@ if __name__ == "__main__":
     parser.add_argument("inputs", nargs="*", help="Search terms or image names")
     parser.add_argument("--file", "-f", help="File containing list of terms or images (one per line)")
     parser.add_argument("--mode", choices=["search", "image", "mixed"], default="mixed", help="Mode: 'search' for terms, 'image' for direct image names, 'mixed' (default) detects based on format (contains ':')")
+    parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}", help="Show version and exit")
     
     # Configuration
     parser.add_argument("--workers", type=int, default=Config.MAX_WORKERS, help="Number of concurrent workers")
