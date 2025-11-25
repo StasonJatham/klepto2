@@ -1,20 +1,20 @@
-FROM docker:25.0.5-cli
+FROM python:3.11-slim AS builder
 
-# Install runtime dependencies used by the shell scripts and parser
-RUN apk add --no-cache \
-    bash \
-    coreutils \
+# Install dependencies
+RUN apt-get update && apt-get install -y \
     curl \
-    jq \
-    python3
+    tar \
+    skopeo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binaries from official images
+COPY --from=trufflesecurity/trufflehog:latest /usr/bin/trufflehog /usr/local/bin/trufflehog
+COPY --from=zricethezav/gitleaks:latest /usr/bin/gitleaks /usr/local/bin/gitleaks
 
 WORKDIR /app
-COPY . /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Make sure helper scripts are executable
-RUN chmod +x search.sh search_scan.sh scan.sh script.sh parser.sh || true
+COPY . .
 
-ENV PYTHONUNBUFFERED=1
-
-# Default entrypoint runs the search workflow; override with --entrypoint for other scripts
-ENTRYPOINT ["./search.sh"]
+ENTRYPOINT ["python", "klepto2.py"]
