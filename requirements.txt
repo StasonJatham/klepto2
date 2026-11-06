@@ -1,2 +1,8 @@
-requests
-colorama
+requests==2.34.2
+colorama==0.4.6
+
+# Requests dependencies, pinned to reproduce the tested build.
+certifi==2026.10.23
+charset-normalizer==3.5.2
+idna==3.20
+urllib3==2.8.0

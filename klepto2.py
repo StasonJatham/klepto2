@@ -105,6 +105,46 @@ class Config:
         {"name": "RECENTSERVERS.XML", "pattern": "recentservers.xml", "action": "cat"},
         {"name": "CONFIG.JSON", "pattern": "config.json", "action": "cat"},
         {"name": ".PGPASS", "pattern": ".pgpass", "action": "cat"},
+        # Flag credential stores without copying their contents into the report.
+        {"name": "AWS CONFIG", "pattern": ".aws/config", "action": "exist"},
+        {
+            "name": "AWS SSO CACHE",
+            "pattern": ".aws/sso/cache/*.json",
+            "action": "exist",
+        },
+        {
+            "name": "GOOGLE ADC",
+            "pattern": "application_default_credentials.json",
+            "action": "exist",
+        },
+        {
+            "name": "GCLOUD CREDENTIALS",
+            "pattern": "gcloud/credentials.db",
+            "action": "exist",
+        },
+        {
+            "name": "AZURE TOKEN CACHE",
+            "pattern": ".azure/msal_token_cache.*",
+            "action": "exist",
+        },
+        {"name": "KUBECONFIG", "pattern": ".kube/config", "action": "exist"},
+        {
+            "name": "TERRAFORM CREDENTIALS",
+            "pattern": "credentials.tfrc.json",
+            "action": "exist",
+        },
+        {"name": "CODEX AUTH", "pattern": ".codex/auth.json", "action": "exist"},
+        {
+            "name": "CLAUDE CODE CREDENTIALS",
+            "pattern": ".claude/.credentials.json",
+            "action": "exist",
+        },
+        {
+            "name": "HUGGING FACE TOKEN",
+            "pattern": "huggingface/token",
+            "action": "exist",
+        },
+        {"name": "WANDB SETTINGS", "pattern": "wandb/settings", "action": "exist"},
     ]
 
 
@@ -118,7 +158,7 @@ class HubClient:
         url = f"{self.BASE_URL}/search/repositories/"
         params = {"query": term, "page_size": 100}
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
             return [repo["repo_name"] for repo in data.get("results", [])]
@@ -133,7 +173,7 @@ class HubClient:
 
         url = f"{self.BASE_URL}/repositories/{repo_name}/tags"
         try:
-            response = requests.get(url, params={"page_size": 10})
+            response = requests.get(url, params={"page_size": 10}, timeout=30)
             if response.status_code == 404:
                 return None
             response.raise_for_status()
@@ -233,39 +273,41 @@ class FileScanner:
             pattern = check["pattern"]
             action_type = check["action"]
 
-            if pattern == ".git/config":
-                for root, dirs, files in os.walk(directory):
-                    if ".git" in dirs:
-                        git_dir = os.path.join(root, ".git")
-                        config_file = os.path.join(git_dir, "config")
-                        if os.path.exists(config_file):
+            for root, _, files in os.walk(directory):
+                for filename in files:
+                    filepath = os.path.join(root, filename)
+                    candidate = (
+                        os.path.relpath(filepath, directory)
+                        if "/" in pattern
+                        else filename
+                    )
+                    if not self._match_pattern(candidate, pattern):
+                        continue
+                    if os.path.islink(filepath) or not os.path.isfile(filepath):
+                        continue
+                    if action_type == "shadow":
+                        self._check_shadow(filepath)
+                    elif action_type == "cat":
+                        if pattern == ".git/config":
                             self.add_finding(
-                                f"Found GIT CONFIG: {git_dir}",
+                                f"Found GIT CONFIG: {root}",
                                 console=True,
                                 level="WARNING",
                             )
-                            self._cat_file(config_file)
-            else:
-                for root, dirs, files in os.walk(directory):
-                    for filename in files:
-                        if self._match_pattern(filename, pattern):
-                            filepath = os.path.join(root, filename)
-                            if action_type == "shadow":
-                                self._check_shadow(filepath)
-                            elif action_type == "cat":
-                                self._cat_file(filepath)
-                            else:
-                                self.add_finding(
-                                    f"Found {title}: {filepath}",
-                                    console=True,
-                                    level="WARNING",
-                                )
+                        self._cat_file(filepath)
+                    else:
+                        self.add_finding(
+                            f"Found {title}: {filepath}", console=True, level="WARNING"
+                        )
         return self.findings
 
     def _match_pattern(self, filename: str, pattern: str) -> bool:
         import fnmatch
 
-        return fnmatch.fnmatch(filename.lower(), pattern.lower())
+        filename, pattern = filename.lower(), pattern.lower()
+        return fnmatch.fnmatchcase(filename, pattern) or (
+            "/" in pattern and fnmatch.fnmatchcase(filename, f"*/{pattern}")
+        )
 
     def _check_shadow(self, filepath: str):
         try:
@@ -306,80 +348,46 @@ class Klepto2:
         logger.info(f"Extracting layers from {image_dir} to {extract_root}")
         os.makedirs(extract_root, exist_ok=True)
 
-        # Read manifest to find layers
-        manifest_path = os.path.join(image_dir, "manifest.json")
-        files_to_extract = []
+        with open(os.path.join(image_dir, "manifest.json")) as manifest_file:
+            layers = json.load(manifest_file)["layers"]
 
-        if os.path.exists(manifest_path):
-            try:
-                with open(manifest_path, "r") as f:
-                    manifest = json.load(f)
-
-                layers = manifest.get("layers", [])
-                for layer in layers:
-                    digest = layer.get("digest", "")
-                    # Skopeo dir format usually saves files as the digest without 'sha256:' prefix
-                    # or sometimes with it. We check both.
-                    clean_digest = digest.replace("sha256:", "")
-
-                    if os.path.exists(os.path.join(image_dir, clean_digest)):
-                        files_to_extract.append(clean_digest)
-                    elif os.path.exists(os.path.join(image_dir, digest)):
-                        files_to_extract.append(digest)
-            except Exception as e:
-                logger.error(f"Error parsing manifest: {e}")
-
-        # Fallback: if manifest parsing failed or yielded no files, try all non-metadata files
-        if not files_to_extract:
-            files_to_extract = [
-                f
-                for f in os.listdir(image_dir)
-                if f not in ["manifest.json", "version"]
-            ]
-
-        for filename in files_to_extract:
-            filepath = os.path.join(image_dir, filename)
-            try:
-                # Use system tar for performance
-                subprocess.run(
-                    ["tar", "-xf", filepath, "-C", extract_root],
-                    check=False,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-            except Exception as e:
-                logger.error(f"Failed to extract {filepath}: {e}")
+        for layer in layers:
+            digest = layer["digest"]
+            if (
+                not digest
+                or os.path.basename(digest) != digest
+                or digest in (".", "..")
+            ):
+                raise ValueError(f"Invalid layer digest: {digest!r}")
+            filepath = os.path.join(image_dir, digest.removeprefix("sha256:"))
+            if not os.path.isfile(filepath):
+                filepath = os.path.join(image_dir, digest)
+            subprocess.run(["tar", "-xf", filepath, "-C", extract_root], check=True)
 
     def run_trufflehog(self, directory: str, output_file: str):
-        cmd = ["trufflehog", "filesystem", directory, "--json"]
-        try:
-            with open(output_file, "w") as outfile:
-                subprocess.run(
-                    cmd, stdout=outfile, stderr=subprocess.DEVNULL, check=False
-                )
-        except Exception as e:
-            logger.error(f"TruffleHog failed: {e}")
+        with open(output_file, "w") as outfile:
+            subprocess.run(
+                ["trufflehog", "filesystem", directory, "--json", "--no-update"],
+                stdout=outfile,
+                check=True,
+            )
 
     def run_gitleaks(self, directory: str, output_file: str):
-        cmd = [
-            "gitleaks",
-            "detect",
-            "--no-git",
-            "-v",
-            "-s",
-            directory,
-            "-f",
-            "json",
-            "-r",
-            output_file,
-        ]
-        try:
-            # Suppress stdout/stderr to keep logs clean
-            subprocess.run(
-                cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
-            )
-        except Exception as e:
-            logger.error(f"Gitleaks failed: {e}")
+        subprocess.run(
+            [
+                "gitleaks",
+                "dir",
+                directory,
+                "--exit-code",
+                "0",
+                "--report-format",
+                "json",
+                "--report-path",
+                output_file,
+            ],
+            stdout=subprocess.DEVNULL,
+            check=True,
+        )
 
     def parse_trufflehog_results(self, input_file: str) -> List[dict]:
         if not os.path.exists(input_file):
@@ -486,11 +494,8 @@ class Klepto2:
 
             gitleaks_findings = []
             if os.path.exists(gl_output_tmp):
-                try:
-                    with open(gl_output_tmp, "r") as f:
-                        gitleaks_findings = json.load(f)
-                except json.JSONDecodeError:
-                    pass
+                with open(gl_output_tmp) as f:
+                    gitleaks_findings = json.load(f) or []
 
             # Combine all results
             final_result = {
@@ -552,12 +557,13 @@ class Klepto2:
 
         if not image_names:
             logger.info("No images to process.")
-            return
+            return False
 
         logger.info(
             f"Starting scan of {len(image_names)} images with {Config.MAX_WORKERS} workers."
         )
 
+        success = True
         with ThreadPoolExecutor(max_workers=Config.MAX_WORKERS) as executor:
             future_to_image = {
                 executor.submit(self.process_image, img): img for img in image_names
@@ -565,11 +571,14 @@ class Klepto2:
             for future in as_completed(future_to_image):
                 image_name = future_to_image[future]
                 try:
-                    future.result()
+                    if future.result() is None:
+                        success = False
                 except Exception as exc:
+                    success = False
                     logger.error(f"{image_name} generated an exception: {exc}")
 
         logger.info("All scans completed. Exiting.")
+        return success
 
 
 if __name__ == "__main__":
@@ -634,4 +643,4 @@ if __name__ == "__main__":
         exit(1)
 
     klepto = Klepto2()
-    klepto.run(target_inputs, args.mode)
+    raise SystemExit(0 if klepto.run(target_inputs, args.mode) else 1)
